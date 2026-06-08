@@ -1,0 +1,11 @@
+opencv-python
+torch
+torchvision
+ultralytics
+numpy
+flask
+flask-socketio
+mysql-connector-python
+psutil
+pyyaml
+flask-cors

@@ -1,0 +1,2 @@
+- Dang mat cai send_log_to_client vi no nam ben sys
+- Moi sua xong cai send_log_to_db. Mai code cai nhan cua server xong luu lai
