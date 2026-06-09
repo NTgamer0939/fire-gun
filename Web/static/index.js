@@ -1,26 +1,12 @@
 $(document).ready(function() {
-    const socket = io({
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5,
-        transports: ['polling'],
-        withCredentials: true
-    });
-    var state = "logs";
-    var currentPage = 1;
-    var clientId;
+    const socket = io("http://localhost:3000");
+    let state = "logs";
+    let currentPage = 1;
 
-    console.log(socket);
     socket.on('connect', () => {
         console.log("Connected to server");
     });
 
-    socket.on('getID', (data) => {
-        clientId = data;
-        console.log(clientId);
-    });
-    
     socket.on("connect_error", (err) => {
         console.log("Lỗi kết nối:", err);
     });
@@ -33,7 +19,7 @@ $(document).ready(function() {
                 url: '/start_stream',
                 method: 'POST',
                 data: {
-                    clientID: clientId
+                    sid: sid
                 }
             });
             
@@ -53,7 +39,7 @@ $(document).ready(function() {
                 url: '/stop_stream',
                 method: 'POST',
                 data: {
-                    clientID: clientId
+                    sid: sid
                 }
             });
 
@@ -69,9 +55,6 @@ $(document).ready(function() {
 
 
     socket.on('new_log', (data) => {
-        if ($('#show_content').hasClass('stream_video')) {
-            return;
-        }
         loadLogs(data);
     });
 
@@ -105,9 +88,12 @@ $(document).ready(function() {
         $.ajax({
             url: '/change_page',
             method: 'POST',
+            dataType: 'json',
             data: {
-                page: currentPage,
-                clientID: clientId
+                page: currentPage
+            },
+            success: (res) => {
+                loadLogs(res);
             }
         });
     });
@@ -117,9 +103,6 @@ $(document).ready(function() {
         $.ajax({
             url: '/export',
             method: 'POST',
-            data: {
-                clientID: clientId
-            },
             success: function(response) {
                 downloadFile(response);
             }
@@ -128,21 +111,22 @@ $(document).ready(function() {
 
     // Load new logs
     function loadLogs(data) {
+        if ($('#show_content').hasClass('stream_video')) return;
         console.log("Loading logs...");
         $('#show_content').html('');
-        for (let i = 0; i < data.length; i++) {
+        for (i = 0; i < data.length; i++) {
             console.log(data.length);
             $('#show_content').append(`
                 <ul class="log">
                     <li class="content">🔥 Detected fire in: </li>
                     <li class="date">${data[i].datetime}</li></ul>
                     <li class="image">
-                        <img src="data:image/jpeg;base64,${data[i].image}" alt="Log Image">
+                        <img src="${window.location.origin}/${data[i].imagePath}" alt="Log image">
                     </li>
                 </ul>
             `);
         }
-        console.log("Logs loaded");
+        console.log("Loaded logs");
     }
 
     // Download logs
