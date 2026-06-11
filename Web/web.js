@@ -2,7 +2,8 @@ const express = require('express');
 const mysql = require('mysql');
 const { Server } = require('socket.io');
 const http = require('http');
-const fs = require('fs')
+const fs = require('fs');
+const { hostname } = require('os');
 const PORT = 3000;
 
 const app = express();
