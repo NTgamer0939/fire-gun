@@ -15,14 +15,7 @@ $(document).ready(function() {
     $('#change_mode').on('click', function() {
         if (state === "logs") {
             state = "stream";
-            $.ajax({
-                url: '/start_stream',
-                method: 'POST',
-                data: {
-                    sid: sid
-                }
-            });
-            
+            socket.emit('join_stream');
             $('#show_content').removeClass('logs');
             $('#show_content').addClass('stream_video');
             $('#show_content').html('');
@@ -32,17 +25,10 @@ $(document).ready(function() {
             $('#title-log-div > p').text('Hình ảnh trực tiếp');
             $('#change_mode').text('Xem nhật ký');
             $('#pagination').hide();
-            
+            console.log('join');
         } else {
             state = "logs";
-            $.ajax({
-                url: '/stop_stream',
-                method: 'POST',
-                data: {
-                    sid: sid
-                }
-            });
-
+            socket.emit('leave_stream');
             $('#show_content').removeClass('stream_video');
             $('#show_content').addClass('logs');
             $('#show_content').attr('width', 'auto');
@@ -50,6 +36,7 @@ $(document).ready(function() {
             $('#title-log-div > p').text('Nhật ký báo cháy');
             $('#change_mode').text('Xem trực tiếp');
             $('#pagination').show();
+            console.log('leave');
         }
     });
 
@@ -59,16 +46,25 @@ $(document).ready(function() {
     });
 
     // Streaming
-    var busy = false;
-    var lastedFrame = null;
+    let busy = false;
+    let lastedFrame = null;
+    let lastUrl = null;
 
     function renderFrame(frame) {
         busy = true;
-        $('#img-stream').attr('src', `data:image/jpeg;base64,${frame}`);
+        const blob = new Blob([frame], {type: 'image/jpeg'});
+        const url = URL.createObjectURL(blob);
+
+        if (lastUrl) {
+            URL.revokeObjectURL(lastUrl);
+        }
+
+        $('#img-stream').attr('src', url);
+        lastUrl = url;
         busy = false;
     }
     
-    socket.on('stream_frame', (data) => {
+    socket.on('stream', (data) => {
         if (busy) {
             console.log('new');
             lastedFrame = data;

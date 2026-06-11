@@ -2,6 +2,7 @@ const express = require('express');
 const mysql = require('mysql');
 const { Server } = require('socket.io');
 const http = require('http');
+const fs = require('fs')
 const PORT = 3000;
 
 const app = express();
@@ -15,13 +16,15 @@ const io = new Server(
     }
 );
 
-app.use(express.static('json'));
-app.use(express.urlencoded({ extended: true }));
+app.set('views', './templates');
 app.use(express.static('./static'));
 app.use(express.static('./images'));
-app.set('views', './templates');
+app.use(express.json({ limit: '10mb', parameterLimit: 50000}));
+app.use(express.urlencoded({limit: '10mb', parameterLimit: 50000, extended: true }));
 
 let connection;
+let camId = '';
+let userInStream = new Array;
 
 // const connection = mysql.createConnection({
 //     host: "localhost",
@@ -39,7 +42,7 @@ const mysqlConfig = {
 async function connectDatabase() {
     await new Promise((resolve, reject) => {
         connection = mysql.createConnection(mysqlConfig);
-        connection.connect((err) => {
+        connection.connect((err) => { 
             if (err) {
                 console.error('Error connecting to database:', err);
                 return;
@@ -74,7 +77,11 @@ async function sendToClient(currentPage=1, clientId) {
     const query = `SELECT * FROM \`log\` ORDER BY \`id\` DESC LIMIT 0, 5`;
     var data = await executeQuery(query);
     data = dataProcesser(data);
-    io.to(clientId).emit('new_log', data);
+    if (clientId != 'refresh') {
+        io.to(clientId).emit('new_log', data);
+    } else{
+        io.to('logs-room').emit('new_log', data);
+    }
 }
 
 async function executeQuery(query) {
@@ -99,32 +106,96 @@ function convertDate(data) {
     let hours = String(date.getHours()).padStart(2, '0');
     let minutes = String(date.getMinutes()).padStart(2, '0');
     let seconds = String(date.getSeconds()).padStart(2, '0');
+
     return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+}
+
+function saveImage(imgName, image) {
+    const fileName = imgName + `.jpg`;
+    const buffer = Buffer.from(image, 'base64');
+
+    fs.writeFileSync('./images/' + fileName, buffer);
+    console.log("Saved image with name: ", fileName);
+}
+
+function streamManager(method=null, socketId) {
+    if (method == null) return;
+
+    if (method == 'join'){
+        userInStream.push(socketId);
+    }
+    if (method == 'leave') {
+        for (let i = 0; i < userInStream.length; i++) {
+            if (userInStream[i] == socketId) {
+                userInStream.splice(i, 1);
+            }
+        }
+    }
+
+    if (userInStream.length == 0) {
+        if (camId != '') {
+            io.to(camId).emit('stop');
+        }
+    }
+    else {
+        io.to(camId).emit('start');
+    }
+    console.log(userInStream);
 }
 
 app.get('/', (req, res) => {
     return res.render('index.ejs');
 });
 
-io.on('connection', (socket) => {
-    console.log("[NEW CONNECTION] Connected to client: " + socket.id);
-    sendToClient(1, socket.id);
-    return {message: "Connected!"};
+io.use((socket, next) => {
+    if (socket.handshake.auth.token == "010818064018thilamthidang") {
+        camId = socket.id;
+        console.log('[CAMERA] Camera is ready!');
+        next();
+    }
+    next();
 });
-io.on('disconnect', (socket) => {
-    console.log("[DISCONNECTED] Client disconnected: " + socket.id);
+
+io.on('connection', (socket) => {
+    console.log("[CONNECTION] Connected to client: " + socket.id);
+    sendToClient(1, socket.id);
+    socket.join('logs-room');
+
+    socket.on('join_stream', () => {
+        socket.leave('logs-room');
+        socket.join('stream-room');
+        streamManager('join', socket.id);
+        console.log('[STREAM] Client join to stream room: ' + socket.id);
+    })
+    
+    socket.on('leave_stream', () => {
+        socket.leave('stream-room');
+        socket.join('logs-room');
+        streamManager('leave', socket.id);
+        console.log('[!STREAM] Client leave to stream room: ' + socket.id);
+        sendToClient(1, socket.id);
+    })
+    
+    socket.on('frame_from_camera', (frame) =>{
+        if (socket.id != camId) {
+            return;
+        }
+        io.to('stream-room').emit('stream', frame);
+    })
+    
+    socket.on('disconnect', () => {
+        if (socket.id == camId) {
+            camId = '';
+            console.log('[CAMERA] Camera is offline!');
+            return;
+        }
+        streamManager('leave', socket.id);
+        console.log("[!CONNECTION] Client disconnected: " + socket.id);
+    });
 });
 
 io.on('error', (err) => {
     console.error('[ERROR] Socket.IO error:', err);
-});
-
-app.post("/start_stream", () => {
-    console.log("[STREAM] Client requested to start stream");
-});
-
-app.post("/stop_stream", () => {
-    console.log("[STREAM] Client requested to stop stream");
 });
 
 app.post('/export', async (req, res) => {
@@ -142,7 +213,7 @@ app.post('/export', async (req, res) => {
     res.json(content);
 })
 
-app.post("/change_page", async (req, res) => {
+app.post('/change_page', async (req, res) => {
     currentPage = req.body.page;
 
     const query = `SELECT * FROM \`log\` ORDER BY \`id\` DESC LIMIT ${(parseInt(currentPage) - 1) * 5}, 5`;
@@ -154,6 +225,18 @@ app.post("/change_page", async (req, res) => {
     console.log(`An user change to page ${currentPage}`);
 })
 
+app.post('/upload_image', (req, res) => {
+    console.log(req.body)
+    const imgName = req.body.fileName;
+    const image = req.body.image;
+
+    saveImage(imgName, image);
+
+    sendToClient(1, 'refresh');
+
+    console.log("[DANGER] An warning image saved in storge");
+})
+
 function keepDatabaseAlive() {
     setInterval(() => {
         if (connection) {
@@ -162,7 +245,7 @@ function keepDatabaseAlive() {
     }, 30000);
 }
 
-// Bật server
+// Turn on server
 server.listen(PORT, () => {
     console.log(`Server đang chạy ở port ${PORT} rồi nha!`);
     connectDatabase();
