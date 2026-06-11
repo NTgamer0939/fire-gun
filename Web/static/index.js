@@ -1,26 +1,12 @@
 $(document).ready(function() {
-    const socket = io({
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5,
-        transports: ['polling'],
-        withCredentials: true
-    });
-    var state = "logs";
-    var currentPage = 1;
-    var clientId;
+    const socket = io("http://localhost:3000");
+    let state = "logs";
+    let currentPage = 1;
 
-    console.log(socket);
     socket.on('connect', () => {
         console.log("Connected to server");
     });
 
-    socket.on('getID', (data) => {
-        clientId = data;
-        console.log(clientId);
-    });
-    
     socket.on("connect_error", (err) => {
         console.log("Lỗi kết nối:", err);
     });
@@ -29,14 +15,7 @@ $(document).ready(function() {
     $('#change_mode').on('click', function() {
         if (state === "logs") {
             state = "stream";
-            $.ajax({
-                url: '/start_stream',
-                method: 'POST',
-                data: {
-                    clientID: clientId
-                }
-            });
-            
+            socket.emit('join_stream');
             $('#show_content').removeClass('logs');
             $('#show_content').addClass('stream_video');
             $('#show_content').html('');
@@ -46,17 +25,10 @@ $(document).ready(function() {
             $('#title-log-div > p').text('Hình ảnh trực tiếp');
             $('#change_mode').text('Xem nhật ký');
             $('#pagination').hide();
-            
+            console.log('join');
         } else {
             state = "logs";
-            $.ajax({
-                url: '/stop_stream',
-                method: 'POST',
-                data: {
-                    clientID: clientId
-                }
-            });
-
+            socket.emit('leave_stream');
             $('#show_content').removeClass('stream_video');
             $('#show_content').addClass('logs');
             $('#show_content').attr('width', 'auto');
@@ -64,28 +36,35 @@ $(document).ready(function() {
             $('#title-log-div > p').text('Nhật ký báo cháy');
             $('#change_mode').text('Xem trực tiếp');
             $('#pagination').show();
+            console.log('leave');
         }
     });
 
 
     socket.on('new_log', (data) => {
-        if ($('#show_content').hasClass('stream_video')) {
-            return;
-        }
         loadLogs(data);
     });
 
     // Streaming
-    var busy = false;
-    var lastedFrame = null;
+    let busy = false;
+    let lastedFrame = null;
+    let lastUrl = null;
 
     function renderFrame(frame) {
         busy = true;
-        $('#img-stream').attr('src', `data:image/jpeg;base64,${frame}`);
+        const blob = new Blob([frame], {type: 'image/jpeg'});
+        const url = URL.createObjectURL(blob);
+
+        if (lastUrl) {
+            URL.revokeObjectURL(lastUrl);
+        }
+
+        $('#img-stream').attr('src', url);
+        lastUrl = url;
         busy = false;
     }
     
-    socket.on('stream_frame', (data) => {
+    socket.on('stream', (data) => {
         if (busy) {
             console.log('new');
             lastedFrame = data;
@@ -105,9 +84,12 @@ $(document).ready(function() {
         $.ajax({
             url: '/change_page',
             method: 'POST',
+            dataType: 'json',
             data: {
-                page: currentPage,
-                clientID: clientId
+                page: currentPage
+            },
+            success: (res) => {
+                loadLogs(res);
             }
         });
     });
@@ -117,9 +99,6 @@ $(document).ready(function() {
         $.ajax({
             url: '/export',
             method: 'POST',
-            data: {
-                clientID: clientId
-            },
             success: function(response) {
                 downloadFile(response);
             }
@@ -128,21 +107,22 @@ $(document).ready(function() {
 
     // Load new logs
     function loadLogs(data) {
+        if ($('#show_content').hasClass('stream_video')) return;
         console.log("Loading logs...");
         $('#show_content').html('');
-        for (let i = 0; i < data.length; i++) {
+        for (i = 0; i < data.length; i++) {
             console.log(data.length);
             $('#show_content').append(`
                 <ul class="log">
                     <li class="content">🔥 Detected fire in: </li>
                     <li class="date">${data[i].datetime}</li></ul>
                     <li class="image">
-                        <img src="data:image/jpeg;base64,${data[i].image}" alt="Log Image">
+                        <img src="${window.location.origin}/${data[i].imagePath}" alt="Log image">
                     </li>
                 </ul>
             `);
         }
-        console.log("Logs loaded");
+        console.log("Loaded logs");
     }
 
     // Download logs

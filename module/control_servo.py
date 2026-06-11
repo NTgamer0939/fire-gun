@@ -6,7 +6,7 @@ class ControlServo:
     def __init__(self, host='10.15.111.189', port=12345):
         self.host = host
         self.port = port
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen(1)
         print(f"Server listening on port {self.port}...")

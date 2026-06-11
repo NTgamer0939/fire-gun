@@ -1,6 +1,7 @@
 from module.get_image import get_image_from_camera
 from module.calc_position import PositionCalculator
 from module.control_servo import ControlServo
+from module.stream import SocketClient
 from module import warning_process
 import time
 import threading
@@ -11,7 +12,7 @@ def start():
     P = 0.006
     I = 0.00
     D = 0.00
-    conf = 0.6
+    conf = 0.7
 
     OFFSET_CENTER_Y = -300
     OFFSET_CENTER_X = 0
@@ -34,7 +35,9 @@ def start():
     dir_x = 1 # 1: left, -1: right
     dir_y = 1 # 1: down, -1: up
 
-    camera = get_image_from_camera(model_path = "last_3.pt",
+    last_time_send = time.time()
+
+    camera = get_image_from_camera(model_path = "last.pt",
                                     offset_center_x=OFFSET_CENTER_X, offset_center_y=OFFSET_CENTER_Y,
                                     conf=conf
                                     )
@@ -44,12 +47,20 @@ def start():
                                                 range_angle_x=RANGE_ANGLE_X, range_angle_y=RANGE_ANGLE_Y, 
                                                 dir_x=dir_x, dir_y=dir_y
                                                 )
-    servo = ControlServo()
-    servo.send_angle(real_x, real_y, 0)
+
+    # servo = ControlServo()
+    # servo.send_angle(real_x, real_y, 0)
+
+    web_client = SocketClient()
 
     while True:
         # Capture an image from the camera
         frame = camera.get_image()
+        
+        if time.time() - last_time_send >= 0.3 and web_client.is_stream == True:
+            threading.Thread(target=web_client.send_frame_to_server, args=(frame,)).start()
+            last_time_send = time.time()
+            print('dang chay ne')
         
         # Detect objects in the image
         bboxs = camera.detect_objects(frame)
@@ -61,7 +72,7 @@ def start():
         if STATE == 0:
             real_x, real_y, dir_x, dir_y = position_calculator.dir_changer(real_x, real_y, dir_x, dir_y)
             
-            servo.send_angle(real_x, real_y, 0)
+            # servo.send_angle(real_x, real_y, 0)
             
             if target_positions:
                 last_time = time.time()
@@ -97,7 +108,7 @@ def start():
         
         if STATE == 2:
             real_x, real_y, pump, last_up_down_y, state_up_down = position_calculator.calc_angle(real_x, real_y, x_range, y_range, last_up_down_y, state_up_down)
-            servo.send_angle(real_x, real_y, pump)
+            # servo.send_angle(real_x, real_y, pump)
             if pump == 1:
                 last_time = time.time()
                 print(f"shooting at angle: {real_x}, {real_y}")
