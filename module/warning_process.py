@@ -117,7 +117,7 @@ def send_log_to_database(img):
             is_mysql_done = query(sql, val)
             time.sleep(1)
 
-    threading.Thread(target=send_mysql, args=(sql, val))
+    threading.Thread(target=send_mysql, args=(sql, val)).start()
 
     # Cache
     os.makedirs("images", exist_ok=True)
