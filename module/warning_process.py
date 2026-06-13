@@ -110,7 +110,7 @@ def send_log_to_database(img):
     sql = "INSERT INTO log (datetime, image) VALUES (%s, %s)"
     val = (f"{dateTime['year']}-{dateTime['month']}-{dateTime['day']} {dateTime['hour']}:{dateTime['minute']}:{dateTime['second']}", fileName)
 
-    def send_mysql():
+    def send_mysql(sql, val):
         is_mysql_done = False
 
         while not is_mysql_done:
