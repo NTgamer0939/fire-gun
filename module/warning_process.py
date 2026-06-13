@@ -104,8 +104,6 @@ def query(command, val=None):
 #         print(f"Error occurred while sending request: {e}")
 
 def send_log_to_database(img):
-    is_mysql_done = False
-
     dateTime = get_current_time()
 
     fileName = int(time.time())
@@ -113,6 +111,8 @@ def send_log_to_database(img):
     val = (f"{dateTime['year']}-{dateTime['month']}-{dateTime['day']} {dateTime['hour']}:{dateTime['minute']}:{dateTime['second']}", fileName)
 
     def send_mysql():
+        is_mysql_done = False
+
         while not is_mysql_done:
             is_mysql_done = query(sql, val)
             time.sleep(1)
