@@ -68,7 +68,7 @@ button {
 #show_content {
     display: flex;
     flex-direction: column;
-    padding-right: 10px;
+    padding: 0 !important;
 }
 .log {
     list-style-type: none;
@@ -96,6 +96,17 @@ img {
 .stream_video {
     display: flex;
     justify-content: center;
+    padding: 0 !important;
+    align-items: center;
+}
+#img-stream {
+    width: 90% !important;
+}
+
+#clock {
+    font-size: 3vh;
+    font-family: Times, 'Times New Roman', serif;
+    font-weight: 400;
 }
 
 #pagination {
@@ -119,4 +130,14 @@ img {
 .direction_button:hover {
     background-color: rgb(233, 76, 76);
     color: rgb(216, 0, 0);
+}
+
+.flag {
+    flex-grow: 1;
+}
+.red {
+    background-color: red;
+}
+.green {
+    background-color:  rgb(17, 180, 17);
 }

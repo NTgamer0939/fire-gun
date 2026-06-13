@@ -8,7 +8,7 @@ class SocketClient:
                     auth = {
                         'token': "010818064018thilamthidang"
                     })
-        self.is_stream = True
+        self.is_stream = False
 
         @self.sio.on('start')
         def startStream ():
