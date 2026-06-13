@@ -77,7 +77,7 @@ def request_to_host(package, data):
     except Exception as e:
         print(f"Error occurred while sending request: {e}")
 
-def send_log_to_database(img):
+def uploadData(img):
 
     dateTime = get_current_time()
 
@@ -86,6 +86,7 @@ def send_log_to_database(img):
 
     id_row = query(sql, val)
 
+    # Cache
     os.makedirs("images", exist_ok=True)
     image_path = os.path.join("images", f"{id_row}.jpg")
     cv2.imwrite(image_path, img)
@@ -110,7 +111,7 @@ def encode_base64(img):
 def process_warning(frame):
     # tele_notification.send_message("Đã phát hiện đám cháy!")
 
-    send_log_to_database(frame)
+    uploadData(frame)
 
     print("Log sent to database")
     print("Warning sent to your phone")
