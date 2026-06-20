@@ -19,12 +19,14 @@ class PositionCalculator:
             return None
         
         distance_check = 1000
+        nearest = None
         for target in target_position:
             # choose nearest target
             distance = math.sqrt((target[0] - self.center_x) ** 2 + (target[1] - self.center_y) ** 2)
             if distance < distance_check:
                 distance_check = distance
-        return target
+                nearest = target
+        return nearest
 
     def convert_center_coordinates(self, results):
         if not results:
@@ -45,8 +47,7 @@ class PositionCalculator:
             return None, None
         
         target = self.choose_target(target_position)
-        if target is None:
-            return None, None
+        if target is None: return None, None
         
         # calculate pid
         error_x = target[0] - self.center_x

@@ -1,0 +1,143 @@
+//*********************main file***********************
+#include <WiFi.h>
+#include <ArduinoOTA.h>
+#include <ESP32Servo.h>
+#include <HardwareSerial.h>
+
+// Cấu hình WiFi
+const char* ssid = "fire_home";
+const char* password = "firegunof11a9";
+
+const char* server_host = "192.168.1.123";  // hoặc "my-laptop.local" nếu mDNS
+// const char* server_host = "10.42.140.189";  // hoặc "my-laptop.local" nếu mDNS
+// const char* server_host = "10.15.111.189";  // hoặc "my-laptop.local" nếu mDNS
+const uint16_t server_port = 12345;
+
+WiFiClient client;
+
+// Cấu hình servo
+#define ser_x_pin 27
+#define ser_y_pin 26
+
+Servo ser_x;
+Servo ser_y;
+
+// Cấu hình pump
+#define pump_pin 25
+byte pump = pump_pin;
+
+// Buzzer
+#define buzzer 22
+
+// Value
+byte last_angle_x = 0;
+byte last_angle_y = 0;
+
+void otaTask(void *param) {
+  for (;;) {
+    ArduinoOTA.handle();
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  connect_wifi();
+  connect_socket();
+  ArduinoOTA.begin();
+  xTaskCreatePinnedToCore(otaTask, "ota", 4096, NULL, 2, NULL, 0);
+  setup_servo();
+  pinMode(pump, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+}
+
+void loop() {  
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Wifi disconnected");
+    connect_wifi();
+  }
+  if (!client.connected()){
+    Serial.println("Socket disconnected");
+    connect_socket();
+  }
+
+  // Nhận phản hồi
+  if (client.available()) {
+    String data = client.readStringUntil('\n');
+    Serial.print("Server phan hoi: ");
+    Serial.println(data);
+    
+    byte angle_x = splitStr(data, "!", 0).toInt();
+    byte angle_y = splitStr(data, "!", 1).toInt();
+    bool pump_val = splitStr(data, "!", 2).toInt();
+    bool buzzer_val = pump_val;
+    
+    control_servo(angle_x, angle_y);
+    digitalWrite(pump, pump_val);
+    digitalWrite(buzzer, buzzer_val);
+  }
+}
+
+void control_servo(byte angle_x, byte angle_y){
+  if(last_angle_x != angle_x){
+    ser_x.write(angle_x);
+    last_angle_x = angle_x;
+  }
+  
+  if(last_angle_y != angle_y){
+    ser_y.write(angle_y);
+    last_angle_y = angle_y;
+  }
+}
+
+// ****************setup file**************************
+void connect_wifi(){
+  // Connect WiFi
+  if (WiFi.status() == WL_CONNECTED) return;
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  delay(3000);
+
+  unsigned long start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 10000) {
+    delay(100);
+  }
+  Serial.println("WiFi connected");
+}
+
+void connect_socket(){
+  // Connect socket
+  if (client.connected()) return;
+
+  client.stop();
+
+  if (client.connect(server_host, server_port)) {
+    Serial.println("Socket connected");
+  } else {
+    Serial.println("Socket connect failed");
+  }
+}
+
+void setup_servo(){
+  ser_x.setPeriodHertz(50);      // Tần số PWM của servo là 50Hz
+  ser_x.attach(ser_x_pin, 500, 2400); // Gắn servo (giới hạn xung từ 500us đến 2400us)
+  
+  ser_y.setPeriodHertz(50);      // Tần số PWM của servo là 50Hz
+  ser_y.attach(ser_y_pin, 500, 2400); // Gắn servo (giới hạn xung từ 500us đến 2400us)
+
+  ser_x.write(70);
+  ser_y.write(70);
+}
+
+String splitStr(String inputString, String delim, uint16_t pos) {
+    String tmp = inputString;
+    for(int i=0; i<pos; i++) {
+        tmp = tmp.substring(tmp.indexOf(delim)+1);
+        if(tmp.indexOf(delim)== -1
+                && i != pos -1 )
+            return "";
+    }
+    return tmp.substring(0,tmp.indexOf(delim));
+}

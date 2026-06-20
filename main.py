@@ -9,7 +9,7 @@ import threading
 def start():
     print("Starting main...")
     # Initialize parameters
-    P = 0.006
+    P = 0.01
     I = 0.00
     D = 0.00
     conf = 0.7
@@ -48,19 +48,19 @@ def start():
                                                 dir_x=dir_x, dir_y=dir_y
                                                 )
 
-    # servo = ControlServo()
-    # servo.send_angle(real_x, real_y, 0)
+    servo = ControlServo()
+    servo.send_angle(real_x, real_y, 0)
 
-    web_client = SocketClient()
+    # web_client = SocketClient()
 
     while True:
         # Capture an image from the camera
         frame = camera.get_image()
         
-        if time.time() - last_time_send >= 0.3 and web_client.is_stream == True:
-            threading.Thread(target=web_client.send_frame_to_server, args=(frame,)).start()
-            last_time_send = time.time()
-            print('dang chay ne')
+        # if time.time() - last_time_send >= 0.3 and web_client.is_stream == True:
+        #     threading.Thread(target=web_client.send_frame_to_server, args=(frame,)).start()
+        #     last_time_send = time.time()
+        #     print('Streaming...')
         
         # Detect objects in the image
         bboxs = camera.detect_objects(frame)
@@ -72,7 +72,7 @@ def start():
         if STATE == 0:
             real_x, real_y, dir_x, dir_y = position_calculator.dir_changer(real_x, real_y, dir_x, dir_y)
             
-            # servo.send_angle(real_x, real_y, 0)
+            servo.send_angle(real_x, real_y, 0)
             
             if target_positions:
                 last_time = time.time()
@@ -98,8 +98,8 @@ def start():
                         if time.time() - log_time > 30:
                             log_time = time.time()
                             
-                            warning = threading.Thread(target=warning_process.process_warning, args=(frame,))
-                            warning.start()
+                            # warning = threading.Thread(target=warning_process.process_warning, args=(frame,))
+                            # warning.start()
                             
                         print("Object detected, switching to shooting state...")
                         STATE = 2
