@@ -8,5 +8,4 @@ flask-socketio
 mysql-connector-python
 psutil
 pyyaml
-flask-cors
-"python-socketio[client]"
+pyserial

@@ -3,7 +3,7 @@ from ultralytics import YOLO
 import torch
 
 class FromCamera:
-    def __init__ (self, model_path='last_3.pt', conf=0.7, width=1920, height=1080):
+    def __init__ (self, model_path='last.pt', conf=0.7, width=1920, height=1080):
         self.cap = cv2.VideoCapture(0)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)

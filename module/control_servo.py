@@ -1,20 +1,17 @@
-import socket
+import serial
 import time
 
 class ControlServo:
-    # def __init__(self, host='10.42.140.189', port=12345):
-    def __init__(self, host='192.168.137.1', port=12345):
-    # def __init__(self, host='169.254.51.48', port=12345):
-    # def __init__(self, host='10.15.111.189', port=12345):
-        self.host = host
-        self.port = port
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((self.host, self.port))
-        self.server_socket.listen(1)
-        print(f"Server listening on port {self.port}...")
-        self.conn, self.addr = self.server_socket.accept()
-        print(f"Connected by {self.addr}")
+    def __init__(self, COM_PORT='COM3', BAUD_RATE='115200'):
+        self.COM_PORT = COM_PORT
+        self.BAUD_RATE = BAUD_RATE
         self.wait_time = time.time()
+        self.connect_serial()
+        
+    def connect_serial(self):
+        self.ser = serial.Serial(self.COM_PORT, self.BAUD_RATE, timeout=1)
+        time.sleep(2)
+        print(f"[SYSTEM] Opened serial port in {self.COM_PORT} with BAUD_RATE: {self.BAUD_RATE}")
         
     def send_command(self, command):
         if ('!' in command) and (time.time() - self.wait_time < 0.3): return
@@ -22,11 +19,10 @@ class ControlServo:
             command += '\n'
         print(f"Sending command: {command.strip()}")
         try:
-            self.conn.sendall(command.encode())
+            self.ser.write(command.encode("utf-8"))
         except Exception as e:
             print(f"Error sending command: {e}")
-            self.server_socket.listen(1)
-            self.conn, self.addr = self.server_socket.accept()
+            self.connect_serial()
     
     def send_angle(self, angle_x, angle_y, pump):
         command = f"{angle_x}!{angle_y}!{pump}!\n"

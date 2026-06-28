@@ -26,11 +26,11 @@ angle_y = 0
 
 pump = 0
 
-cam_width = 640
-cam_height = 480
+cam_width = 1920
+cam_height = 1080
 camera = FromCamera(width=cam_width, height=cam_height)
 
-servo_control = ControlServo()
+servo_control = ControlServo(COM_PORT='COM4')
 
 def autoMode():
     global last_x, last_y, check_time, state
