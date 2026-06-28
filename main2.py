@@ -16,7 +16,7 @@ wait_check_time = 0.5
 delay_time = time.time()
 
 last_x = 70
-last_y = 50
+last_y = 58
 
 real_x = 70
 real_y = 50

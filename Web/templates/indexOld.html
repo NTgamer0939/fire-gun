@@ -33,7 +33,22 @@
         <button class="direction_button" data-direction="1">→</button>
     </div>
     <ul id="show_content" class="logs">
-        
+        <ul class="log">
+            <li class="content">🔥 Detected fire in: </li>
+            <li class="date">${data[i].datetime}</li>
+            <li class="flag ${flag}"></li></ul>
+            <li class="image">
+                <img src="${window.location.origin}/${data[i].imagePath}" alt="Log image">
+            </li>
+        </ul>
+        <ul class="log">
+            <li class="content">🔥 Detected fire in: </li>
+            <li class="date">${data[i].datetime}</li>
+            <li class="flag ${flag}"></li></ul>
+            <li class="image">
+                <img src="${window.location.origin}/${data[i].imagePath}" alt="Log image">
+            </li>
+        </ul>
     </ul>
 </body>
 </html>

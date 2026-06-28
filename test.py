@@ -1,18 +1,15 @@
-import time
+import cv2
+from module.getCamera import FromCamera
 
-from module import control_servo
+cam = FromCamera()
 
-servo = control_servo.ControlServo()
+while True:
+    frame = cam.get_image()
+    
+    cam.draw_centers_points(frame)
+    
+    
+    cam.show_image(frame)
 
-# while True:
-#     servo.send_angle(40, 40, 1)
-#     time.sleep(1)
-#     servo.send_angle(40, 40, 0)
-#     time.sleep(1)
-
-# servo.send_angle(40, 40, 0)
-
-
-servo.send_angle(40, 40, 1)
-time.sleep(1)
-servo.send_angle(40, 40, 0)
+cam.release()
+cv2.destroyAllWindows()

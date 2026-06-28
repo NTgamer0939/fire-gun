@@ -13,7 +13,7 @@ def cal_degree(center_targets, width, height, last_angle_x, last_angle_y):
     distance = 10000
     nearest = []
     x_center = width / 2
-    y_center = height / 2 - 120
+    y_center = height / 2 #- 120 ***************************************************************
     for coor in center_targets:
         target_distance = abs(math.sqrt(((coor[0] - x_center) ** 2 ) + ((coor[1] - y_center) ** 2)))
         if target_distance < distance:

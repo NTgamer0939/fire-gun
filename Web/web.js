@@ -54,7 +54,7 @@ async function connectDatabase() {
     });
     connection.on('error', (err) => {
         console.error('Database error:', err);
-        connectDatabase()
+        setTimeout(lambda => connectDatabase(), 5000);
     });
 };
 
@@ -167,6 +167,7 @@ io.on('connection', (socket) => {
         socket.join('stream-room');
         streamManager('join', socket.id);
         console.log('[STREAM] Client join to stream room: ' + socket.id);
+        (camId != '') ? socket.emit('camera_status', true) : socket.emit('camera_status', false);
     })
     
     socket.on('leave_stream', () => {

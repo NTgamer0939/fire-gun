@@ -3,6 +3,8 @@ $(document).ready(function() {
     let state = "logs";
     let currentPage = 1;
     let timeAutoRefresh;
+    let viewWidth = innerWidth;
+    let camera = false;
 
     socket.on('connect', () => {
         console.log("Connected to server");
@@ -12,40 +14,121 @@ $(document).ready(function() {
         console.log("Lỗi kết nối:", err);
     });
 
-    // Toggle between logs mode and stream mode
-    $('#change_mode').on('click', function() {
-        if (state === "logs") {
-            state = "stream";
-            socket.emit('join_stream');
-            $('#show_content').removeClass('logs');
-            $('#show_content').addClass('stream_video');
-            $('#show_content').html('');
-            $('#show_content').append(`<img id="img-stream" src="" alt="Stream">`);
-            $('#show_content').append('<span id="clock"></span>');
-            $('#show_content').attr('width', '640px');
-            $('#show_content').attr('height', '480px');
-            $('#title-log-div > p').text('Hình ảnh trực tiếp');
-            $('#change_mode').text('Xem nhật ký');
-            $('#pagination').hide();
-            console.log('join');
-        } else {
-            state = "logs";
-            socket.emit('leave_stream');
-            $('#show_content').removeClass('stream_video');
-            $('#show_content').addClass('logs');
-            $('#show_content').html('');
-            $('#show_content').attr('width', 'auto');
-            $('#show_content').attr('height', 'auto');
-            $('#title-log-div > p').text('Nhật ký báo cháy');
-            $('#change_mode').text('Xem trực tiếp');
-            $('#pagination').show();
-            console.log('leave');
-        }
-    });
+    // Auto refresh page if window resize < or > 768px
+    $(window).resize(function(){
+        if (parseInt(1 + (innerWidth - 768) / (innerWidth * -1 - 768)) != parseInt(1 + (viewWidth - 768) / (viewWidth * -1 - 768))) window.location.reload();
+    })
 
+    // Spin warning
+    if (viewWidth <= 768) $('#alert-warning-spin-device').show()
+    else $('#alert-warning-spin-device').remove();
+    $('#alert-warning-spin-device').click(function(){
+        $('#alert-warning-spin-device').remove();
+    })
+
+    // Animation code and toggle between logs mode and stream mode
+    $('#block').click(function() {
+        let logSlideIn = '';
+        let logSlideOut = '';
+        let streamSlideIn = '';
+        let streamSlideOut = '';
+
+        let logMode = '';
+        let streamMode = '';
+
+        let defaultDirectionAnimation = '';
+
+        let delayMode = 0;
+
+        if (viewWidth > 768) {
+            logSlideIn = 'slideTopIn 500ms 600ms forwards';
+            logSlideOut = 'slideTopOut 500ms forwards';
+            streamSlideIn = 'slideBottomIn 500ms 700ms forwards';
+            streamSlideOut = 'slideBottomOut 500ms forwards';
+
+            logMode = 'changeLogMode';
+            streamMode = 'changeStreamMode';
+
+            defaultDirectionAnimation = 'bottom';
+
+            delayMode = 0;
+        }
+        else {
+            logSlideIn = 'slideLeftInContent 500ms 600ms forwards';
+            logSlideOut = 'slideRightOutContent 500ms forwards';
+            streamSlideIn = 'slideRightInContent 600ms 570ms forwards';
+            streamSlideOut = 'slideLeftOutContent 500ms forwards';
+
+            logMode = 'changeLogModeMobile';
+            streamMode = 'changeStreamModeMobile';
+
+            defaultDirectionAnimation = 'right';
+
+            delayMode = 500;
+        }
+
+        if ($('#block').hasClass('logBlock')){
+            // Log mode
+            socket.emit('leave_stream');
+
+            $('#block').addClass('streamBlock');
+            $('#block').removeClass('logBlock');
+            
+            $('#content-log').show();
+            $('#content-log').css('opacity', '0');
+            $('#content-log').css('animation-delay', '300ms');
+            $('#content-log').css('animation-name', 'slideLeftInContent');
+            $('#content-stream').css('animation-delay', '0ms');
+            $('#content-stream').css('animation-name', 'slideRightOutContent');
+            
+            $('#block').css(defaultDirectionAnimation, 'auto');
+            $('#block').css('animation-name', logMode);
+            
+            $('#nav-log-main > *').css('animation', logSlideIn);
+            $('#nav-stream-main > *').css('animation', streamSlideOut);
+            setTimeout(lambda => $('#nav-log-main').css('z-index', '1'), delayMode);
+            setTimeout(lambda => $('#nav-stream-main').css('z-index', '0'), delayMode);
+            
+            $('body > *').removeClass('blur')
+        } else {
+            // Stream mode
+            socket.emit('join_stream');
+
+            $('#block').addClass('logBlock');
+            $('#block').removeClass('streamBlock');
+            
+            $('#content-log').css('animation-delay', '0ms');
+            $('#content-log').css('animation-name', 'slideLeftOutContent');
+            $('#content-stream').css('animation-delay', '300ms');
+            $('#content-stream').css('animation-name', 'slideRightInContent');
+            
+            $('#block').css(defaultDirectionAnimation, '0');
+            $('#block').css('animation-name', streamMode);
+            
+            $('#nav-log-main > *').css('animation', logSlideOut);
+            $('#nav-stream-main > *').css('animation', streamSlideIn);
+            setTimeout(lambda => $('#nav-log-main').css('z-index', '0'), delayMode);
+            setTimeout(lambda => $('#nav-stream-main').css('z-index', '1'), delayMode);
+
+            $('body > *').addClass('blur');
+            $('#nav-stream-main, content-stream > *, #block').removeClass('blur');
+
+            setTimeout(lambla => $('#content-log').hide(), 500 );
+            $('#content-stream').css('opacity', '0');
+        }
+    })
 
     socket.on('new_log', (data) => {
         loadLogs(data);
+    });
+
+    socket.on('camera_status', (data) => {
+        camera = (data) ? true : false;
+
+        if (camera) return;
+
+        $('#content-stream').text('Camera đang không hoạt động vào lúc này!');
+        console.log('afagsggassadg')
     });
 
     // Streaming
@@ -77,13 +160,13 @@ $(document).ready(function() {
     });
 
     // Pagination
-    $('.direction_button').on('click', function() {
+    $('.direction-button').on('click', function() {
         const direction = $(this).data('direction');
         if (direction == -1 && currentPage == 1) {
             return;
         }
         currentPage += direction;
-        $('#page_numbers').text(currentPage);
+        $('#page-numbers').text(currentPage);
         $.ajax({
             url: '/change_page',
             method: 'POST',
@@ -98,7 +181,7 @@ $(document).ready(function() {
     });
 
     // Export logs
-    $('#export_button').on('click', function(){
+    $('#export-button').on('click', function(){
         $.ajax({
             url: '/export',
             method: 'POST',
@@ -111,19 +194,19 @@ $(document).ready(function() {
     // Load new logs
     function loadLogs(data) {
         let flag;
-        if ($('#show_content').hasClass('stream_video')) return;
+        if ($('#block').hasClass('logBlock')) return;
         console.log("Loading logs...");
-        $('#show_content').html('');
+        $('#content-log').html('');
         for (i = 0; i < data.length; i++) {
 
             let returnVal = attachFlag(data[i].datetime);
             let flag = returnVal.flag;
             if (flag == 'red') timeAutoRefresh = returnVal.time;
-            $('#show_content').append(`
+            $('#content-log').append(`
                 <ul class="log">
-                    <li class="content">🔥 Detected fire in: </li>
-                    <li class="date">${data[i].datetime}</li>
-                    <li class="flag ${flag}"></li></ul>
+                    <li class="content">🔥 Phát hiện đám cháy vào lúc: </li>
+                    <li class="date"> ${data[i].datetime}</li>
+                    <li class="flag ${flag}"></li>
                     <li class="image">
                         <img src="${window.location.origin}/${data[i].imagePath}" alt="Log image">
                     </li>
@@ -151,7 +234,7 @@ $(document).ready(function() {
 
     // Clock
     function clockRun() {
-        if (state != "stream") return;
+        if ($('#block').hasClass('streamBlock')) return;
         const date = new Date();
 
         const second = date.getSeconds();
@@ -161,7 +244,7 @@ $(document).ready(function() {
         const month = date.getMonth() + 1;
         const year = date.getFullYear();
 
-        const time = `🕑${day}/${month}/${year} ${hour}:${minute}:${second}`;
+        const time = `🕑 ${day}/${month}/${year} ${hour}:${minute}:${second}`;
 
         $('#clock').text(time);
     }

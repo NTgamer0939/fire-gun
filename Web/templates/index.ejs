@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Gun</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script src="index.js"></script>
+    <link rel="stylesheet" href="index.css">
+    
+</head>
+<body>
+    <nav>
+        <div id="nav-log-stream">
+            <div id="block" class="block streamBlock"></div>
+            <div id="nav-log-main" class="nav-main">
+                <h1 id="log-title">Nhật ký báo cháy</h1>
+                <div id="pagination">
+                    <button class="direction-button" data-direction="-1">←</button>
+                    <span id="page-numbers">1</span>
+                    <button class="direction-button" data-direction="1">→</button>
+                </div>
+                <button id="export-button" type="button">
+                    <svg id='Downloading_Updates_24' width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><rect width='24' height='24' stroke='none' fill='#000000' opacity='0'/>
+                        <g transform="matrix(0.43 0 0 0.43 12 12)" >
+                            <path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(0, 204, 255); fill-rule: nonzero; opacity: 1;" transform=" translate(-25, -25.5)" d="M 25 3 C 24.449219 3 24 3.449219 24 4 C 24 4.550781 24.449219 5 25 5 C 25.550781 5 26 4.550781 26 4 C 26 3.449219 25.550781 3 25 3 Z M 25 7 C 24.449219 7 24 7.449219 24 8 C 24 8.550781 24.449219 9 25 9 C 25.550781 9 26 8.550781 26 8 C 26 7.449219 25.550781 7 25 7 Z M 25 11 C 24.449219 11 24 11.449219 24 12 C 24 12.550781 24.449219 13 25 13 C 25.550781 13 26 12.550781 26 12 C 26 11.449219 25.550781 11 25 11 Z M 24.90625 14.96875 C 24.863281 14.976563 24.820313 14.988281 24.78125 15 C 24.316406 15.105469 23.988281 15.523438 24 16 L 24 37.5625 L 17.71875 31.28125 C 17.476563 31.03125 17.121094 30.925781 16.78125 31 C 16.40625 31.066406 16.105469 31.339844 16 31.703125 C 15.894531 32.070313 16.003906 32.460938 16.28125 32.71875 L 24.15625 40.5625 C 24.191406 40.617188 24.234375 40.671875 24.28125 40.71875 C 24.300781 40.742188 24.320313 40.761719 24.34375 40.78125 C 24.402344 40.828125 24.464844 40.871094 24.53125 40.90625 C 24.550781 40.917969 24.574219 40.929688 24.59375 40.9375 C 24.605469 40.9375 24.613281 40.9375 24.625 40.9375 C 24.644531 40.949219 24.667969 40.960938 24.6875 40.96875 C 24.726563 40.980469 24.769531 40.992188 24.8125 41 C 24.917969 41.015625 25.019531 41.015625 25.125 41 C 25.144531 41 25.167969 41 25.1875 41 C 25.273438 40.980469 25.359375 40.949219 25.4375 40.90625 C 25.570313 40.839844 25.6875 40.742188 25.78125 40.625 L 33.71875 32.71875 C 34.117188 32.320313 34.117188 31.679688 33.71875 31.28125 C 33.320313 30.882813 32.679688 30.882813 32.28125 31.28125 L 26 37.5625 L 26 16 C 26.011719 15.710938 25.894531 15.433594 25.6875 15.238281 C 25.476563 15.039063 25.191406 14.941406 24.90625 14.96875 Z M 2 33 L 2 45 C 2 46.644531 3.355469 48 5 48 L 45 48 C 46.644531 48 48 46.644531 48 45 L 48 33 L 46 33 L 46 45 C 46 45.566406 45.566406 46 45 46 L 5 46 C 4.433594 46 4 45.566406 4 45 L 4 33 Z" stroke-linecap="round" />
+                        </g>
+                    </svg>
+                    <p>Xuất dữ liệu</p>
+                </button>
+            </div>
+            <div id="nav-stream-main" class="nav-main">
+                <h1 id="stream-title">Hình ảnh trực tiếp</h1>
+                <div id="clock">🕑 11/44/4444 44:44:44</div>
+            </div>
+        </div>
+    </nav>
+    <div id="content">
+        <div id="content-log" class="style-in-content">
+
+        </div>
+        <div id="content-stream" class="style-in-content">
+            
+        </div>
+    </div>
+    <div id="alert-warning-spin-device">
+        <div id="model-alert">
+            <h1>Xin chào</h1>
+            <p>Nếu có, vui lòng tắt <b>chế độ tự động xoay ngang</b> trên điện thoại để có trải nghiệm tốt nhất. Xin cảm ơn! </p>
+            <span><i>Bấm để thoát</i></span>
+        </div>
+    </div>
+</body>
+</html>
